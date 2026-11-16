@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fake News Detector</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="background"></div>
+  <div class="background-overlay"></div>
+
+  <!-- ============================================================
+       HOME PAGE
+  ============================================================ -->
+  <div id="home-page" class="page">
+
+    <div class="home-content">
+
+      <div class="left-side">
+        <div class="home-header">
+          <h1 class="site-title">Fake News Detector</h1>
+          <p class="site-subtitle">
+            Paste a news headline or article — the model will tell you if it's Real or Fake
+          </p>
+        </div>
+
+        <textarea
+          id="newsInput"
+          class="news-textarea"
+          placeholder="Paste your news headline or full article here…"
+        ></textarea>
+
+        <!-- Live MySQL Summary Strip -->
+        <div class="db-stats-strip">
+          <span>🗄️ Checked: <strong id="statUnique">0</strong></span>
+          <span>⚡ Cache Hits: <strong id="statCache">0</strong></span>
+          <span>📊 Real / Fake: <strong id="statSplit">0 / 0</strong></span>
+          <span>🎯 Agreement: <strong id="statAcc">100%</strong></span>
+        </div>
+      </div>
+
+      <div class="right-side">
+        <button class="btn btn-analyse" onclick="goToResult()">Analyse News</button>
+        <button class="btn btn-reset"   onclick="resetInput()">Reset News</button>
+        <button class="btn btn-reset"   onclick="goToHistory()">📜 History</button>
+      </div>
+
+    </div>
+
+    <button class="rate-btn" onclick="openRateModal()">⭐ Rate Us</button>
+
+  </div>
+
+
+  <!-- ============================================================
+       RESULT PAGE
+  ============================================================ -->
+  <div id="result-page" class="page hidden">
+
+    <div class="result-content">
+
+      <h2 class="result-heading">Analysis Result</h2>
+
+      <div class="output-box">
+        <div class="spinner" id="spinner"></div>
+        <div class="result-inner" id="resultInner">
+          <div  class="verdict-badge" id="verdictBadge"></div>
+          <p    class="result-reason" id="resultReason"></p>
+          <div class="confidence-wrap">
+            <span class="confidence-label">Confidence</span>
+            <div  class="confidence-track">
+              <div class="confidence-fill" id="confFill"></div>
+            </div>
+            <span class="confidence-number" id="confNumber"></span>
+          </div>
+
+          <!-- User Verdict Feedback saved to MySQL -->
+          <div class="feedback-bar">
+            <span class="feedback-prompt">Was this verdict accurate?</span>
+            <button class="btn-mini" onclick="sendFeedback(true)">👍 Yes</button>
+            <button class="btn-mini" onclick="sendFeedback(false)">👎 No</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-actions">
+        <button class="btn btn-back" onclick="goHome()">← Back to Home Page</button>
+        <button class="btn btn-back" onclick="goToHistory()">📜 Previous Searches</button>
+      </div>
+
+    </div>
+
+    <button class="rate-btn" onclick="openRateModal()">⭐ Rate Us</button>
+
+  </div>
+
+
+  <!-- ============================================================
+       HISTORY PAGE (Previous Searches from MySQL)
+  ============================================================ -->
+  <div id="history-page" class="page hidden">
+
+    <div class="history-content">
+
+      <h2 class="result-heading">Previous Searches (MySQL Archive)</h2>
+
+      <div class="history-box">
+        <div class="history-toolbar">
+          <input
+            type="text"
+            id="historySearch"
+            class="history-input"
+            placeholder="Search saved headlines or articles…"
+            oninput="loadHistory()"
+          />
+          <select id="historyFilter" class="history-select" onchange="loadHistory()">
+            <option value="">All Verdicts</option>
+            <option value="REAL">REAL Only</option>
+            <option value="FAKE">FAKE Only</option>
+          </select>
+          <a href="/export" class="btn-mini">⬇ Export CSV</a>
+        </div>
+
+        <div class="table-scroll">
+          <table class="history-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>News Snippet</th>
+                <th>Verdict</th>
+                <th>Conf.</th>
+                <th>Checks</th>
+                <th>Date (UTC)</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody">
+              <tr><td colspan="7" class="empty-cell">Loading records from MySQL…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="btn btn-back" onclick="goHome()">← Back to Home Page</button>
+
+    </div>
+
+    <button class="rate-btn" onclick="openRateModal()">⭐ Rate Us</button>
+
+  </div>
+
+
+  <!-- ============================================================
+       RATE US MODAL (Saves to MySQL ratings table)
+  ============================================================ -->
+  <div id="rateModal" class="modal-overlay hidden" onclick="if(event.target===this) closeRateModal()">
+    <div class="modal-box">
+      <h3 class="modal-title">Rate Fake News Detector</h3>
+      <p id="ratingSubtitle" class="modal-sub">Your rating is saved directly to MySQL</p>
+
+      <div class="star-selector" id="starSelector">
+        <span class="star active" onclick="selectStars(1)">★</span>
+        <span class="star active" onclick="selectStars(2)">★</span>
+        <span class="star active" onclick="selectStars(3)">★</span>
+        <span class="star active" onclick="selectStars(4)">★</span>
+        <span class="star active" onclick="selectStars(5)">★</span>
+      </div>
+
+      <textarea
+        id="rateComment"
+        class="modal-textarea"
+        placeholder="Leave an optional comment about the detector…"
+      ></textarea>
+
+      <div class="modal-actions">
+        <button class="btn btn-analyse" style="padding: 0.6rem 1.2rem;" onclick="handleRatingSubmit()">Submit</button>
+        <button class="btn btn-reset"   style="padding: 0.6rem 1.2rem;" onclick="closeRateModal()">Close</button>
+      </div>
+      <p id="rateFeedbackMsg" class="modal-status"></p>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
